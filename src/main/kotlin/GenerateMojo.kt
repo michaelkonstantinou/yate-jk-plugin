@@ -1,5 +1,6 @@
 package com.mkonst
 
+import com.mkonst.config.ConfigYate
 import com.mkonst.helpers.YateConsole
 import com.mkonst.helpers.YateJavaUtils.countTestMethods
 import com.mkonst.runners.YateJavaRunner
@@ -34,10 +35,12 @@ class GenerateMojo: AbstractMojo() {
 
         validateInput()
         println("Current repository path: $repositoryPath")
+        ConfigYate.initialize()
 
         val runner: YateJavaRunner = YateJavaRunner(repositoryPath)
 
         try {
+            YateConsole.info("Generating tests for class $classPath")
             val startTime = System.currentTimeMillis()
             val responses = runner.generate(classPath, testGenerationType)
             val endTime = System.currentTimeMillis()
