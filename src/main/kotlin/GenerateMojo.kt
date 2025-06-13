@@ -1,10 +1,12 @@
 package com.mkonst
 
 import com.mkonst.config.ConfigYate
+import com.mkonst.evaluation.RequestsCounter
 import com.mkonst.helpers.YateConsole
 import com.mkonst.helpers.YateJavaUtils.countTestMethods
 import com.mkonst.runners.YateJavaRunner
 import com.mkonst.types.TestLevel
+import com.sun.org.apache.xpath.internal.operations.Bool
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
@@ -13,10 +15,7 @@ import java.nio.file.Paths
 import kotlin.jvm.Throws
 
 @Mojo(name = "generate")
-class GenerateMojo: AbstractMojo() {
-
-    @Parameter(property = "repositoryPath", required = false, defaultValue = "")
-    private var repositoryPath: String = ""
+class GenerateMojo: AbstractYateMojo() {
 
     @Parameter(property = "type", required = false, defaultValue = "CLASS")
     private var testGenerationType: TestLevel = TestLevel.CLASS
@@ -24,20 +23,27 @@ class GenerateMojo: AbstractMojo() {
     @Parameter(property = "classPath", required = true)
     private lateinit var classPath: String
 
+    @Parameter(property = "includeOracleFixing", required = false)
+    private var includeOracleFixing: Boolean = true
+
+    @Parameter(property = "outputDirectory", required = false)
+    private var outputDirectory: String? = null
+
+    @Parameter(property = "modelName", required = false)
+    private var modelName: String? = null
+
     override fun execute() {
-        if (repositoryPath.isEmpty()) {
-            repositoryPath = Paths.get("").toAbsolutePath().toString()
-        }
-
-        if (!repositoryPath.endsWith("/")) {
-            repositoryPath += "/"
-        }
-
+        initialize()
         validateInput()
-        println("Current repository path: $repositoryPath")
-        ConfigYate.initialize()
 
-        val runner: YateJavaRunner = YateJavaRunner(repositoryPath)
+        println("Current repository path: $repositoryPath")
+        println("Running YateJavaRunner with the following settings")
+        println("----> Include oracle fixing: $includeOracleFixing")
+        println("----> Generated test final directory: ${outputDirectory ?: "(Repository, tests folder)"}")
+        println("----> Model name: ${modelName ?: "(Default)"}")
+
+        // Generation process
+        val runner: YateJavaRunner = YateJavaRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName)
 
         try {
             YateConsole.info("Generating tests for class $classPath")
@@ -55,8 +61,13 @@ class GenerateMojo: AbstractMojo() {
                     generatedTests += countTestMethods(testClassContainer)
                 }
 
+                val requestsCounter: RequestsCounter = runner.getNrRequests()
                 println("# Tests: $generatedTests")
-                println("# Requests: ${runner.getNrRequests()}")
+                println("# All Requests: ${requestsCounter.total}")
+                println("# Generation Requests: ${requestsCounter.generation}")
+                println("# Compilation fixing Requests: ${requestsCounter.compilationFixing}")
+                println("# Oracle fixing Requests: ${requestsCounter.oracleFixing}")
+                println("# Coverage enhancement Requests: ${requestsCounter.coverageEnhancement}")
                 println("Generation time: ${startTime - endTime}")
             }
 
@@ -73,7 +84,6 @@ class GenerateMojo: AbstractMojo() {
         if (classPath.trim().isEmpty()) {
             throw Exception("Class path property cannot be empty")
         }
-
 
         var pathUnderValidation = Paths.get(classPath)
         if (!Files.exists(pathUnderValidation)) {
