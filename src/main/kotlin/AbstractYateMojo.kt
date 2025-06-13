@@ -1,7 +1,12 @@
 package com.mkonst
 
 import com.mkonst.config.ConfigYate
+import com.mkonst.exceptions.InvalidInputException
+import com.mkonst.helpers.YateConsole
+import com.mkonst.runners.YateAbstractRunner
+import com.mkonst.runners.YateJavaRunner
 import com.mkonst.services.PromptService
+import com.mkonst.types.ProgramLangType
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugins.annotations.Parameter
 import java.nio.file.Paths
@@ -11,6 +16,15 @@ abstract class AbstractYateMojo: AbstractMojo() {
     // Common task variables
     @Parameter(property = "repositoryPath", required = false, defaultValue = "")
     protected var repositoryPath: String = ""
+
+    @Parameter(property = "includeOracleFixing", required = false)
+    protected var includeOracleFixing: Boolean = true
+
+    @Parameter(property = "outputDirectory", required = false)
+    protected var outputDirectory: String? = null
+
+    @Parameter(property = "modelName", required = false)
+    protected var modelName: String? = null
 
     // Env variables
     @Parameter(property = "config", required = false, defaultValue = ".env")
@@ -92,6 +106,22 @@ abstract class AbstractYateMojo: AbstractMojo() {
 
         setEnvValues()
         PromptService.initialize()
+    }
+
+    /**
+     * Verifies the programming language is supported and instantiates a new YateRunner object
+     */
+    protected fun createRunner(): YateJavaRunner {
+        if (lang?.uppercase() !== ProgramLangType.JAVA.toString()) {
+            throw InvalidInputException("Given programming language is not supported at the moment")
+        }
+
+        YateConsole.debug("Instantiating YateJavaRunner with the following settings")
+        YateConsole.debug("----> Include oracle fixing: $includeOracleFixing")
+        YateConsole.debug("----> Generated test final directory: ${outputDirectory ?: "(Repository, tests folder)"}")
+        YateConsole.debug("----> Model name: ${modelName ?: "(Default)"}")
+
+        return YateJavaRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName)
     }
 
     protected fun setEnvValues() {

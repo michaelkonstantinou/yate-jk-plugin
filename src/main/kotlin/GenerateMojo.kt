@@ -23,27 +23,14 @@ class GenerateMojo: AbstractYateMojo() {
     @Parameter(property = "classPath", required = true)
     private lateinit var classPath: String
 
-    @Parameter(property = "includeOracleFixing", required = false)
-    private var includeOracleFixing: Boolean = true
-
-    @Parameter(property = "outputDirectory", required = false)
-    private var outputDirectory: String? = null
-
-    @Parameter(property = "modelName", required = false)
-    private var modelName: String? = null
-
     override fun execute() {
         initialize()
         validateInput()
 
-        println("Current repository path: $repositoryPath")
-        println("Running YateJavaRunner with the following settings")
-        println("----> Include oracle fixing: $includeOracleFixing")
-        println("----> Generated test final directory: ${outputDirectory ?: "(Repository, tests folder)"}")
-        println("----> Model name: ${modelName ?: "(Default)"}")
+        YateConsole.info("Current repository path: $repositoryPath")
 
         // Generation process
-        val runner: YateJavaRunner = YateJavaRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName)
+        val runner: YateJavaRunner = createRunner()
 
         try {
             YateConsole.info("Generating tests for class $classPath")

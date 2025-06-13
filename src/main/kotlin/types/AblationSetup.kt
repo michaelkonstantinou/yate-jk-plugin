@@ -1,0 +1,5 @@
+package com.mkonst.types
+
+enum class AblationSetup {
+    NO_ABLATION, NO_SUMMARY, NO_COMPILATION_FIXING, NO_ORACLE_FIXING, NO_FIXING, NO_COVERAGE_ENHANCEMENT
+}
