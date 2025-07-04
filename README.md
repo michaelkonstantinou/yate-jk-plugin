@@ -100,21 +100,31 @@ mvn yate:generate -DincludeOracleFixing=false -DmodelName=my-model -DgptApiKey=y
 
 ## Execution guide: Available Commands
 
-### Test generation for class
+### Test generation on class
 
+**Generating tests for the whole class**
 ```bash
 mvn yate:generate -DclassPath=full/path/to/cut.java
 ```
 
+**Generating tests for a specific method of the class**
+```bash
+mvn yate:generate -DclassPath=full/path/to/cut.java -DmethodName=foo
+```
+
 **Exclusive to action parameters**
 
-| Parameter   | Required | Default | Type   | Description                                                                            |
-|-------------|----------|---------|--------|----------------------------------------------------------------------------------------|
-| `classPath` | Yes      | -       | String | The absolute path of class under test                                                  |
-| `type`      | No       | CLASS   | String | The level of generation. Can be CLASS, METHOD, METHOD_RESTRICT, CONSTRUCTORS or HYBRID |
+| Parameter    | Required | Default | Type   | Description                                                                            |
+|--------------|----------|---------|--------|----------------------------------------------------------------------------------------|
+| `classPath`  | Yes      | -       | String | The absolute path of class under test                                                  |
+| `type`       | No       | CLASS   | String | The level of generation. Can be CLASS, METHOD, METHOD_RESTRICT, CONSTRUCTORS or HYBRID |
+| `methodName` | No       | -       | String | The name of the method under test                                                      |
 
 ### Test generation via CSV file
 
+The following action is extremely useful for mass-test generation, to target multiple classes of the same project.
+
+For each row, the action will generate tests for the class and update the file with useful statistics.
 ```bash
 mvn yate:generateUsingDataset -Dfile=full/path/to/file.csv
 ```
