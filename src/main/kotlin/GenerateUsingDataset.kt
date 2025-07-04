@@ -31,17 +31,18 @@ class GenerateUsingDataset: AbstractYateMojo() {
         initialize()
 
         val dataset = EvaluationDataset(csvFile)
-
+        val model = this.modelName ?: dataset.records[0].modelName
         val recordSize = dataset.records.size
         var index = 0
 
-        YateConsole.debug("Using csv file for generating tests: $csvFile")
-        YateConsole.debug("Dataset size #$recordSize records")
+        YateConsole.debug("Using csv file for generating tests:\t $csvFile")
+        YateConsole.debug("Model name:\t $model")
+        YateConsole.debug("Dataset size:\t #$recordSize records")
 
         // Set ablation setting
         val runner: YateJavaRunner
         if (ablationSetting === AblationSetup.NO_ABLATION) {
-            runner = YateJavaRunner(dataset.records[0].repositoryPath, includeOracleFixing, dataset.records[0].outputDir, modelName)
+            runner = YateJavaRunner(dataset.records[0].repositoryPath, includeOracleFixing, dataset.records[0].outputDir, model)
         } else {
             runner = getRunnerBasedOnAblationSetup()
         }

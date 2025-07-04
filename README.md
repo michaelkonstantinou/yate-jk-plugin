@@ -8,7 +8,7 @@ approach is to incrementally provide more meaningful content when repairing the 
 
 ### Table of contents
 
-In this README, we will highlight the following elements of template-project creation:
+In this README, we highlight the following elements:
 
 - [Installation](#installation)
   - [Build from source](#build-from-source)
