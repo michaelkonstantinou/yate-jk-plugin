@@ -4,8 +4,10 @@ import com.mkonst.config.ConfigYate
 import com.mkonst.evaluation.RequestsCounter
 import com.mkonst.helpers.YateConsole
 import com.mkonst.helpers.YateJavaUtils.countTestMethods
+import com.mkonst.runners.YateAbstractRunner
 import com.mkonst.runners.YateJavaRunner
 import com.mkonst.types.TestLevel
+import com.mkonst.types.YateResponse
 import com.sun.org.apache.xpath.internal.operations.Bool
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugins.annotations.Mojo
@@ -23,6 +25,9 @@ class GenerateMojo: AbstractYateMojo() {
     @Parameter(property = "classPath", required = true)
     private lateinit var classPath: String
 
+    @Parameter(property = "methodName", required = false)
+    private var methodName: String? = null
+
     override fun execute() {
         initialize()
         validateInput()
@@ -33,9 +38,9 @@ class GenerateMojo: AbstractYateMojo() {
         val runner: YateJavaRunner = createRunner()
 
         try {
-            YateConsole.info("Generating tests for class $classPath")
+
             val startTime = System.currentTimeMillis()
-            val responses = runner.generate(classPath, testGenerationType)
+            val responses = this.generateTests(runner)
             val endTime = System.currentTimeMillis()
 
             if (responses.isEmpty()) {
@@ -66,6 +71,17 @@ class GenerateMojo: AbstractYateMojo() {
         runner.close()
     }
 
+    private fun generateTests(runner: YateAbstractRunner): MutableList<YateResponse> {
+        if (this.methodName === null) {
+            YateConsole.info("Generating tests for class $classPath")
+
+            return runner.generate(classPath, testGenerationType)
+        }
+
+        YateConsole.info("Generating tests for method ${this.methodName} of class $classPath")
+
+        return runner.generate(classPath, this.methodName!!)
+    }
     @Throws
     private fun validateInput() {
         if (classPath.trim().isEmpty()) {

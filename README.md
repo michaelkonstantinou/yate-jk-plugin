@@ -20,7 +20,7 @@ In this README, we highlight the following elements:
 
 ### Build from source
 
-1. Clone and install repository "yate-java"
+1. Clone and install repository [michaelkonstantinou/yate-java](https://github.com/michaelkonstantinou/yate-java)
 2. Clone this repository and run `mvn clean install`
 3. In the project you want to use YATE, add the following plugin in the `pom.xml` file
 
