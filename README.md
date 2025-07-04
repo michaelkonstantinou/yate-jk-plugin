@@ -13,6 +13,7 @@ In this README, we highlight the following elements:
 - [Installation](#installation)
   - [Build from source](#build-from-source)
   - [Configuration](#configuration)
+  - [Execution guide: Available commands](#execution-guide-available-commands)
 
 
 ## Installation
@@ -94,5 +95,54 @@ Fine-tune the number of iterations for various stages of the fixing and generati
 ### 💡 Usage Example (via Maven)
 
 ```bash
-mvn exec:java -DincludeOracleFixing=false -DmodelName=my-model -DgptApiKey=your-key
+mvn yate:generate -DincludeOracleFixing=false -DmodelName=my-model -DgptApiKey=your-key
 ```
+
+## Execution guide: Available Commands
+
+### Test generation for class
+
+```bash
+mvn yate:generate -DclassPath=full/path/to/cut.java
+```
+
+**Exclusive to action parameters**
+
+| Parameter   | Required | Default | Type   | Description                                                                            |
+|-------------|----------|---------|--------|----------------------------------------------------------------------------------------|
+| `classPath` | Yes      | -       | String | The absolute path of class under test                                                  |
+| `type`      | No       | CLASS   | String | The level of generation. Can be CLASS, METHOD, METHOD_RESTRICT, CONSTRUCTORS or HYBRID |
+
+### Test generation via CSV file
+
+```bash
+mvn yate:generateUsingDataset -Dfile=full/path/to/file.csv
+```
+
+**Exclusive to action parameters**
+
+| Parameter       | Required | Default     | Type   | Description                                                                                                                        |
+|-----------------|----------|-------------|--------|------------------------------------------------------------------------------------------------------------------------------------|
+| `file`          | Yes      | -           | String | The absolute path of the csv file                                                                                                  |
+| `ablationSetup` | No       | NO_ABLATION | String | Whether the ablation runner should be used instead of the normal one. Useful to conduct experiments with the removal of components |
+
+Sure! Here's a **bullet list** describing the expected structure of the input CSV file. Each row in your CSV should contain the following fields in this order:
+
+---
+
+#### 📄 CSV File Structure
+
+Each row should include the following fields. Some of them are optional though and others are updated during execution:
+
+* **`repositoryPath`** *(String)*: Path to the source code repository.
+* **`classPath`** *(String)*: Path to the class under test.
+* **`testLevel`** *(Enum: `CLASS`, `METHOD`, etc.)*: The type/level of testing to be performed.
+* **`requests`** *(Object or counter)*: Number of LLM or tool requests made during processing. Updated during execution (can be initialized with 0 or null).
+* **`generationTime`** *(Long / Milliseconds)*: Time taken to generate tests (in ms). Updated during execution (can be initialized with 0 or null).
+* **`isExecuted`** *(Boolean)*: Indicates whether test execution has occurred successfully (`true` or `false`) Updated during execution (can be initialized with 0 or null).
+* **`errors`** *(String, nullable)*: Any errors encountered during generation or execution (can be empty). Updated during execution (can be initialized with 0 or null).
+* **`outputDir`** *(String, nullable)*: Directory where output (e.g., generated tests) is stored.
+* **`modelName`** *(String, nullable)*: Name of the model used for test generation (e.g., `gpt-4`, `deepseek-coder`).
+* **`generatedTests`** *(Int)*: Number of test cases successfully generated (beta version).
+
+---
