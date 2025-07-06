@@ -1,12 +1,14 @@
 package com.mkonst
 
 import com.mkonst.config.ConfigYate
+import com.mkonst.evaluation.YatePlainRunner
 import com.mkonst.exceptions.InvalidInputException
 import com.mkonst.helpers.YateConsole
 import com.mkonst.runners.YateAbstractRunner
 import com.mkonst.runners.YateJavaRunner
 import com.mkonst.services.PromptService
 import com.mkonst.types.ProgramLangType
+import com.mkonst.types.TestExecutionRunner
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugins.annotations.Parameter
 import java.nio.file.Paths
@@ -25,6 +27,9 @@ abstract class AbstractYateMojo: AbstractMojo() {
 
     @Parameter(property = "modelName", required = false)
     protected var modelName: String? = null
+
+    @Parameter(property = "runner", required = false)
+    protected var runnerName: TestExecutionRunner = TestExecutionRunner.DEFAULT
 
     // Env variables
     @Parameter(property = "config", required = false, defaultValue = ".env")
@@ -111,17 +116,21 @@ abstract class AbstractYateMojo: AbstractMojo() {
     /**
      * Verifies the programming language is supported and instantiates a new YateRunner object
      */
-    protected fun createRunner(): YateJavaRunner {
+    protected fun createRunner(): YateAbstractRunner {
         if (lang?.uppercase() !== ProgramLangType.JAVA.toString()) {
             throw InvalidInputException("Given programming language is not supported at the moment")
         }
 
-        YateConsole.debug("Instantiating YateJavaRunner with the following settings")
+        YateConsole.debug("Instantiating $runnerName runner with the following settings")
         YateConsole.debug("----> Include oracle fixing: $includeOracleFixing")
         YateConsole.debug("----> Generated test final directory: ${outputDirectory ?: "(Repository, tests folder)"}")
         YateConsole.debug("----> Model name: ${modelName ?: "(Default)"}")
 
-        return YateJavaRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName)
+        if (runnerName === TestExecutionRunner.DEFAULT) {
+            return YateJavaRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName)
+        }
+
+        return YatePlainRunner(repositoryPath, outputDirectory, modelName, ConfigYate.getInteger("MAX_REPEAT_FAILED_ITERATIONS"))
     }
 
     protected fun setEnvValues() {

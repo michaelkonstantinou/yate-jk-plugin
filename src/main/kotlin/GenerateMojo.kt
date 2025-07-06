@@ -35,7 +35,7 @@ class GenerateMojo: AbstractYateMojo() {
         YateConsole.info("Current repository path: $repositoryPath")
 
         // Generation process
-        val runner: YateJavaRunner = createRunner()
+        val runner: YateAbstractRunner = createRunner()
 
         try {
 

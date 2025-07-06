@@ -2,14 +2,17 @@ package com.mkonst
 
 import com.mkonst.config.ConfigYate.getInteger
 import com.mkonst.evaluation.EvaluationDataset
+import com.mkonst.evaluation.YatePlainRunner
 import com.mkonst.evaluation.ablation.YateAblationRunner
 import com.mkonst.exceptions.InvalidInputException
 import com.mkonst.helpers.YateConsole
 import com.mkonst.helpers.YateConsole.info
 import com.mkonst.helpers.YateJavaUtils.countTestMethods
 import com.mkonst.helpers.YateUtils.timestamp
+import com.mkonst.runners.YateAbstractRunner
 import com.mkonst.runners.YateJavaRunner
 import com.mkonst.types.AblationSetup
+import com.mkonst.types.TestExecutionRunner
 import com.mkonst.types.YateResponse
 import com.sun.org.apache.xpath.internal.operations.Bool
 import org.apache.maven.plugins.annotations.Mojo
@@ -21,7 +24,7 @@ class GenerateUsingDataset: AbstractYateMojo() {
     private lateinit var csvFile: String
 
     @Parameter(property = "ablationSetup", required = false, defaultValue = "NO_ABLATION")
-    private lateinit var ablationSetting: AblationSetup
+    private var ablationSetting: AblationSetup = AblationSetup.NO_ABLATION
 
     override fun execute() {
         if (!csvFile.endsWith(".csv")) {
@@ -32,6 +35,7 @@ class GenerateUsingDataset: AbstractYateMojo() {
 
         val dataset = EvaluationDataset(csvFile)
         val model = this.modelName ?: dataset.records[0].modelName
+        val dirOutput = this.outputDirectory ?: dataset.records[0].outputDir
         val recordSize = dataset.records.size
         var index = 0
 
@@ -40,9 +44,14 @@ class GenerateUsingDataset: AbstractYateMojo() {
         YateConsole.debug("Dataset size:\t #$recordSize records")
 
         // Set ablation setting
-        val runner: YateJavaRunner
+        val runner: YateAbstractRunner
         if (ablationSetting === AblationSetup.NO_ABLATION) {
-            runner = YateJavaRunner(dataset.records[0].repositoryPath, includeOracleFixing, dataset.records[0].outputDir, model)
+            if (this.runnerName === TestExecutionRunner.DEFAULT) {
+                runner = YateJavaRunner(dataset.records[0].repositoryPath, includeOracleFixing, dataset.records[0].outputDir, model)
+            } else {
+                runner = YatePlainRunner(dataset.records[0].repositoryPath, dirOutput, model, 5)
+            }
+
         } else {
             runner = getRunnerBasedOnAblationSetup()
         }
