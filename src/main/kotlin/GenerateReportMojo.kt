@@ -3,12 +3,17 @@ package com.mkonst
 import com.mkonst.evaluation.EvaluationDataset
 import com.mkonst.evaluation.EvaluationDatasetRecord
 import com.mkonst.exceptions.InvalidInputException
+import com.mkonst.helpers.YateConsole
 import com.mkonst.helpers.YateIO
 import com.mkonst.helpers.YateUtils
 import com.mkonst.services.CoverageService
 import com.mkonst.types.ReportType
+import com.mkonst.types.coverage.JacocoCoverageHolder
+import com.mkonst.types.coverage.MutationScore
+import kotlinx.serialization.json.Json
 import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
+import java.io.File
 
 @Mojo(name = "generateReport")
 class GenerateReportMojo: AbstractYateMojo() {
@@ -29,26 +34,33 @@ class GenerateReportMojo: AbstractYateMojo() {
             throw InvalidInputException("-Dfile argument must be a type of csv")
         }
 
-        // todo: use cached coverages
-        val coverages: Map<String, String> = CoverageService.getJacocoCoverages(repositoryPath)
+        val coverages: JacocoCoverageHolder
+        val potentialCoveragesFile = File("$repositoryPath/yate_jacoco_coverages_$key.json")
+        if (potentialCoveragesFile.exists()) {
+            val loadedJson = potentialCoveragesFile.readText()
+            coverages = Json.decodeFromString<JacocoCoverageHolder>(loadedJson)
+        } else {
+            coverages = CoverageService.getJacocoCoverages(repositoryPath)
+        }
 
-
-        // todo: calculate mutation score
+        // Reading mutation score from text file (if exists)
+        val mutationScore: MutationScore? = extractMutationScore("$repositoryPath/yate_ms_score_$key.txt")
 
         if (type === ReportType.CONSOLE || type === ReportType.TEXT) {
-            val report = if (file!== null) generateTextBasedReport(coverages, EvaluationDataset(file)) else generateTextBasedReport(coverages)
+            val report = if (file!== null) generateTextBasedReport(coverages, mutationScore, EvaluationDataset(file)) else generateTextBasedReport(coverages)
 
             if (type === ReportType.CONSOLE) {
                 println(report)
             } else {
                 YateIO.writeFile("$repositoryPath/yate_report_$key.txt", report)
+                YateConsole.info("Report generated and saved here: $repositoryPath/yate_report_$key.txt")
             }
         }
 
 
     }
 
-    private fun generateTextBasedReport(coverages: Map<String, String>, dataset: EvaluationDataset? = null): String {
+    private fun generateTextBasedReport(coverages: JacocoCoverageHolder, mutationScore: MutationScore? = null, dataset: EvaluationDataset? = null): String {
         val report: StringBuilder = StringBuilder()
         report.appendLine("YATE - TEST REPORT")
         report.appendLine("==================\n")
@@ -58,11 +70,17 @@ class GenerateReportMojo: AbstractYateMojo() {
 
         report.appendLine("Code coverage")
         report.appendLine("------------------")
-        report.appendLine("Line coverage:  \t${coverages["line_coverage"]}")
-        report.appendLine("Branch coverage:\t${coverages["branch_coverage"]}")
-        report.appendLine("Method coverage:\t${coverages["method_coverage"]}")
-        report.appendLine("Class coverage: \t${coverages["class_coverage"]}")
-        report.appendLine("Mutation score: \t0,00%")
+        report.appendLine("Line coverage:  \t${coverages.lineCoverage.getScoreText(true)}")
+        report.appendLine("Branch coverage:\t${coverages.branchCoverage.getScoreText(true)}")
+        report.appendLine("Method coverage:\t${coverages.methodCoverage.getScoreText(true)}")
+        report.appendLine("Class coverage: \t${coverages.classCoverage.getScoreText(true)}")
+
+        if (mutationScore !== null) {
+            report.appendLine("Mutation score: \t${mutationScore}")
+        } else {
+            report.appendLine("Mutation score: \tN/A")
+        }
+
 
         if (dataset !== null) {
             report.appendLine("\nPerformance (Total)")
@@ -94,5 +112,20 @@ class GenerateReportMojo: AbstractYateMojo() {
         output.appendLine("#Coverage enhancement requests: ${row.requests.coverageEnhancement}")
 
         return output.toString()
+    }
+
+    private fun extractMutationScore(filepath: String): MutationScore? {
+        if (!File(filepath).exists()) {
+            return null
+        }
+
+        val content = File(filepath).readText()
+        val regex = Regex("""\((\d+)\s*/\s*(\d+)\)""")
+        val match = regex.find(content)
+        return match?.let {
+            val first = it.groupValues[1].toInt()
+            val second = it.groupValues[2].toInt()
+            MutationScore(second, first)
+        }
     }
 }

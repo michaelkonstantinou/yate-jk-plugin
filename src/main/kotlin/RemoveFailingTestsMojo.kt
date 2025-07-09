@@ -41,21 +41,49 @@ class RemoveFailingTestsMojo: AbstractYateMojo() {
         if(type == "all" || type == "non-compile") {
             YateConsole.warning("Non-compiling tests are not always possible to remove. This functionality is in beta version")
 
+            var nrIncorrectImports = 0
+            var nrIncorrectFiles = 0
             for (i in 1..maxIterations) {
-                val nonCompilingTests = errorService.findNonCompilingTests(dependencyTool)
-                if (nonCompilingTests.isEmpty()) {
-                    YateConsole.info("No more tests to remove")
-                    break
+                YateConsole.info("Looking for files with compilation issues. Iteration #$i")
+                val (invalidMethodsByFile, invalidImportsByFile) = errorService.findNonCompilingClassesRegex(dependencyTool)
+
+                if (invalidMethodsByFile.isEmpty()) {
+                    YateConsole.info("No more invalid methods found to remove")
                 }
 
-                // Remove non compiling tests and re-write the test class file
-                for((testClassName, invalidTests) in nonCompilingTests) {
-                    YateConsole.debug("$testClassName: ${invalidTests.size} tests must be removed as they do not compile")
-                    val newContent: String = YateCodeUtils.removeMethodsInClass(classPathsByName[testClassName]!!, invalidTests, ProgramLangType.JAVA)
-                    YateIO.writeFile(classPathsByName[testClassName]!!, newContent)
-                    totalRemovedTests += invalidTests.size
+                // Remove invalid methods
+                for ((testClassPath, invalidMethods) in invalidMethodsByFile) {
+                    totalRemovedTests += invalidMethods.size
+                    var content: String = YateIO.readFile(testClassPath)
+
+                    for (method in invalidMethods) {
+                        content = content.replace(method, "")
+                    }
+
+                    YateConsole.debug("Removing #${invalidMethods.size} methods in file $testClassPath")
+                    YateIO.writeFile(testClassPath, content)
+                }
+
+                if (invalidImportsByFile.isEmpty()) {
+                    YateConsole.info("No invalid files found due to import statements")
+                }
+
+                // Remove files with incorrect import statements
+                for((testClassPath, invalidImports) in invalidImportsByFile) {
+                    YateConsole.debug("$testClassPath: Contains ${invalidImports.size} invalid import statements")
+                    nrIncorrectImports += invalidImports.size
+                    nrIncorrectFiles += 1
+                    YateIO.deleteFile(testClassPath)
+                }
+
+                if (invalidImportsByFile.isEmpty() && invalidMethodsByFile.isEmpty()) {
+                    break
                 }
             }
+
+            YateConsole.info("Total wrong import statements: $nrIncorrectImports")
+            YateConsole.info("Total removed files due to wrong import statements: $nrIncorrectFiles")
+            YateConsole.info("Total removed methods from log (could be also in the import statement files): $totalRemovedTests")
         }
 
         // Remove tests that do not compile

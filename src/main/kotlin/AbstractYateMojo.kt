@@ -117,7 +117,7 @@ abstract class AbstractYateMojo: AbstractMojo() {
      * Verifies the programming language is supported and instantiates a new YateRunner object
      */
     protected fun createRunner(): YateAbstractRunner {
-        if (lang?.uppercase() !== ProgramLangType.JAVA.toString()) {
+        if (ConfigYate.getString("LANG").uppercase() != ProgramLangType.JAVA.toString()) {
             throw InvalidInputException("Given programming language is not supported at the moment")
         }
 
@@ -148,6 +148,7 @@ abstract class AbstractYateMojo: AbstractMojo() {
         if (lang != null) {
             ConfigYate.setValue("LANG", lang!!)
         }
+
         if (gptApiKey != null) {
             ConfigYate.setValue("GPT_API_KEY", gptApiKey!!)
         }
