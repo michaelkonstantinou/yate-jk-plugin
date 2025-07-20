@@ -1,5 +1,5 @@
 package com.mkonst.types
 
 enum class TestExecutionRunner {
-    DEFAULT, PLAIN
+    DEFAULT, PLAIN, ONLY_GENERATION
 }

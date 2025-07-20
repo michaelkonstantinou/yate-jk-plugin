@@ -11,6 +11,7 @@ import com.mkonst.helpers.YateJavaUtils.countTestMethods
 import com.mkonst.helpers.YateUtils.timestamp
 import com.mkonst.runners.YateAbstractRunner
 import com.mkonst.runners.YateJavaRunner
+import com.mkonst.runners.YateOnlyGenerationRunner
 import com.mkonst.types.AblationSetup
 import com.mkonst.types.TestExecutionRunner
 import com.mkonst.types.YateResponse
@@ -46,8 +47,10 @@ class GenerateUsingDataset: AbstractYateMojo() {
         // Set ablation setting
         val runner: YateAbstractRunner
         if (ablationSetting === AblationSetup.NO_ABLATION) {
-            if (this.runnerName === TestExecutionRunner.DEFAULT) {
+            if (this.runnerName == TestExecutionRunner.DEFAULT) {
                 runner = YateJavaRunner(dataset.records[0].repositoryPath, includeOracleFixing, dataset.records[0].outputDir, model)
+            } else if (this.runnerName == TestExecutionRunner.ONLY_GENERATION) {
+                runner = YateOnlyGenerationRunner(dataset.records[0].repositoryPath, dirOutput, model)
             } else {
                 runner = YatePlainRunner(dataset.records[0].repositoryPath, dirOutput, model, 5)
             }
