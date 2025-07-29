@@ -6,6 +6,12 @@
 **YATE** is a research project for generating unit tests using LLMs. Its
 approach is to incrementally provide more meaningful content when repairing the LLM's response 
 
+### Relevant paper
+
+[YATE: The Role of Test Repair in LLM-Based Unit Test Generation](https://arxiv.org/abs/2507.18316)
+
+If this repository or the linked paper helped you in anyway, please make sure to cite it
+
 ### Table of contents
 
 In this README, we highlight the following elements:
