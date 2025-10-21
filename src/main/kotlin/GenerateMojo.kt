@@ -2,6 +2,7 @@ package com.mkonst
 
 import com.mkonst.config.ConfigYate
 import com.mkonst.evaluation.RequestsCounter
+import com.mkonst.helpers.YateCodeUtils
 import com.mkonst.helpers.YateConsole
 import com.mkonst.helpers.YateJavaUtils.countTestMethods
 import com.mkonst.runners.YateAbstractRunner
@@ -50,7 +51,7 @@ class GenerateMojo: AbstractYateMojo() {
 
                 var generatedTests: Int = 0
                 for ((testClassContainer) in responses) {
-                    generatedTests += countTestMethods(testClassContainer)
+                    generatedTests += YateCodeUtils.countTestMethods(testClassContainer)
                 }
 
                 val requestsCounter: RequestsCounter = runner.getNrRequests()

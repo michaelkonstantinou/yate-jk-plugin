@@ -117,9 +117,9 @@ abstract class AbstractYateMojo: AbstractMojo() {
      * Verifies the programming language is supported and instantiates a new YateRunner object
      */
     protected fun createRunner(): YateAbstractRunner {
-        if (ConfigYate.getString("LANG").uppercase() != ProgramLangType.JAVA.toString()) {
-            throw InvalidInputException("Given programming language is not supported at the moment")
-        }
+//        if (ConfigYate.getString("LANG").uppercase() != ProgramLangType.JAVA.toString()) {
+//            throw InvalidInputException("Given programming language is not supported at the moment")
+//        }
 
         YateConsole.debug("Instantiating $runnerName runner with the following settings")
         YateConsole.debug("----> Include oracle fixing: $includeOracleFixing")
@@ -130,7 +130,7 @@ abstract class AbstractYateMojo: AbstractMojo() {
             return YateJavaRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName)
         }
 
-        return YatePlainRunner(repositoryPath, outputDirectory, modelName, ConfigYate.getInteger("MAX_REPEAT_FAILED_ITERATIONS"))
+        return YatePlainRunner(repositoryPath, outputDirectory, modelName, 5, ProgramLangType.valueOf(ConfigYate.getString("LANG")))
     }
 
     protected fun setEnvValues() {
