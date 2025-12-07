@@ -6,6 +6,7 @@ import com.mkonst.exceptions.InvalidInputException
 import com.mkonst.helpers.YateConsole
 import com.mkonst.helpers.YateIO
 import com.mkonst.helpers.YateUtils
+import com.mkonst.report.HTMLReportBuilder
 import com.mkonst.services.CoverageService
 import com.mkonst.types.ReportType
 import com.mkonst.types.coverage.JacocoCoverageHolder
@@ -55,9 +56,18 @@ class GenerateReportMojo: AbstractYateMojo() {
                 YateIO.writeFile("$repositoryPath/yate_report_$key.txt", report)
                 YateConsole.info("Report generated and saved here: $repositoryPath/yate_report_$key.txt")
             }
+        } else {
+            // HTML Version
+            val builder = HTMLReportBuilder()
+            builder.appendMutationScore(mutationScore).appendJacocoCoverages(coverages)
+
+            if (file !== null) {
+                builder.appendEvaluationDataset(file)
+            }
+
+            builder.generate("$repositoryPath/yate_report_$key.html")
+            YateConsole.info("Report generated and saved here: $repositoryPath/yate_report_$key.html")
         }
-
-
     }
 
     private fun generateTextBasedReport(coverages: JacocoCoverageHolder, mutationScore: MutationScore? = null, dataset: EvaluationDataset? = null): String {

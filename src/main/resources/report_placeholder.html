@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analysis Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1, h2 {
+            color: #2c3e50;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+
+        .failure {
+            color: red;
+            font-weight: bold;
+        }
+
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            background-color: #e1ecf4;
+            color: #0366d6;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Project Report</h1>
+
+<!-- Section 1: Code Coverage -->
+<div class="section">
+    <h2>1. Code Coverage</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>Type</th>
+            <th>Coverage (%)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>Line Coverage</td>
+            <td>%%LINE_COVERAGE%%</td>
+        </tr>
+        <tr>
+            <td>Branch Coverage</td>
+            <td>%%BRANCH_COVERAGE%%</td>
+        </tr>
+        <tr>
+            <td>Method Coverage</td>
+            <td>%%METHOD_COVERAGE%%</td>
+        </tr>
+        <tr>
+            <td>Class Coverage</td>
+            <td>%%CLASS_COVERAGE%%</td>
+        </tr>
+        <tr>
+            <td>Mutation Score</td>
+            <td>%%MUTATION_SCORE%%</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Section 2: Performance -->
+<div class="section">
+    <h2>2. Performance</h2>
+    <ul>
+        %%PERFORMANCE_VALUES%%
+    </ul>
+</div>
+
+<!-- Section 3: Per File -->
+<div class="section">
+    <h2>3. Per File Status</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>File</th>
+            <th>Execution Status</th>
+            <th># Total Requests</th>
+            <th># Generation Requests</th>
+            <th># Compilation Fixing Requests</th>
+            <th># Oracle Fixing Requests</th>
+            <th># Coverage Enhancement Requests</th>
+            <th>Generation Time</th>
+            <th>Generation Time (Human-readable)</th>
+        </tr>
+        </thead>
+        <tbody>
+        %%PERFORMANCE_ROWS%%
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
