@@ -97,6 +97,11 @@ class RemoveFailingTestsMojo: AbstractYateMojo() {
 
                 // Remove non passing tests and re-write the test class file
                 for((testClassName, invalidTests) in nonPassingTests) {
+                    if (testClassName.equals("com") || testClassName.equals("org") || testClassName.equals("software") || testClassName.equals("amazon")) {
+                        YateConsole.error("Invalid class name found '$testClassName' with the following invalid tests: $invalidTests")
+                        continue
+                    }
+
                     YateConsole.debug("$testClassName: ${invalidTests.size} tests must be removed as they do not pass")
                     val newContent: String = YateCodeUtils.removeMethodsInClass(classPathsByName[testClassName]!!, invalidTests, ProgramLangType.JAVA)
                     YateIO.writeFile(classPathsByName[testClassName]!!, newContent)
