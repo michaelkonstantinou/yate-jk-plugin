@@ -45,7 +45,7 @@ class RemoveFailingTestsMojo: AbstractYateMojo() {
             var nrIncorrectFiles = 0
             for (i in 1..maxIterations) {
                 YateConsole.info("Looking for files with compilation issues. Iteration #$i")
-                val (invalidMethodsByFile, invalidImportsByFile) = errorService.findNonCompilingClassesRegex(dependencyTool)
+                val (invalidMethodsByFile, invalidImportsByFile, invalidStaticClassesByFile) = errorService.findNonCompilingClassesRegex(dependencyTool)
 
                 if (invalidMethodsByFile.isEmpty()) {
                     YateConsole.info("No more invalid methods found to remove")
@@ -76,7 +76,18 @@ class RemoveFailingTestsMojo: AbstractYateMojo() {
                     YateIO.deleteFile(testClassPath)
                 }
 
-                if (invalidImportsByFile.isEmpty() && invalidMethodsByFile.isEmpty()) {
+                // Remove invalid static classes
+                for ((testClassPath, invalidStaticClasses) in invalidStaticClassesByFile) {
+                    var content: String = YateIO.readFile(testClassPath)
+                    for (method in invalidStaticClasses) {
+                        content = content.replace(method, "")
+                    }
+
+                    YateConsole.debug("Removing #${invalidStaticClasses.size} classes in file $testClassPath")
+                    YateIO.writeFile(testClassPath, content)
+                }
+
+                if (invalidImportsByFile.isEmpty() && invalidMethodsByFile.isEmpty() && invalidStaticClassesByFile.isEmpty()) {
                     break
                 }
             }

@@ -52,7 +52,7 @@ class GenerateUsingDataset: AbstractYateMojo() {
             } else if (this.runnerName == TestExecutionRunner.ONLY_GENERATION) {
                 runner = YateOnlyGenerationRunner(dataset.records[0].repositoryPath, dirOutput, model)
             } else {
-                runner = YatePlainRunner(dataset.records[0].repositoryPath, dirOutput, model, 5)
+                runner = YatePlainRunner(dataset.records[0].repositoryPath, dirOutput, model, this.maxFixIterations ?: 5)
             }
 
         } else {
