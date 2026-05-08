@@ -20,6 +20,7 @@ In this README, we highlight the following elements:
   - [Build from source](#build-from-source)
   - [Configuration](#configuration)
   - [Execution guide: Available commands](#execution-guide-available-commands)
+  - [Running other implementations (e.g. LLM-Plain)](#other-implementations)
 
 
 ## Installation
@@ -162,3 +163,17 @@ Each row should include the following fields. Some of them are optional though a
 * **`generatedTests`** *(Int)*: Number of test cases successfully generated (beta version).
 
 ---
+
+## Other implementations
+
+We add more implementations to the existing library/plugin. Regardless of YATE, we added the following:
+- PLAIN (aka LLM-Plain)
+- PLAIN_WITH_REPAIR (LLM-Plain with YATE's compilation fixing and oracle fixing components)
+
+You need to add the following flag to your command line
+`-Drunner=<VALUE>`
+
+Example:
+```bash
+mvn yate:generateUsingDataset -Dfile=/absolute/path/to/my_dataset.csv -Drunner=PLAIN
+```
