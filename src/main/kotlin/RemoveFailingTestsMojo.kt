@@ -45,14 +45,15 @@ class RemoveFailingTestsMojo: AbstractYateMojo() {
             var nrIncorrectFiles = 0
             for (i in 1..maxIterations) {
                 YateConsole.info("Looking for files with compilation issues. Iteration #$i")
-                val (invalidMethodsByFile, invalidImportsByFile, invalidStaticClassesByFile) = errorService.findNonCompilingClassesRegex(dependencyTool)
+//                val (invalidMethodsByFile, invalidImportsByFile, invalidStaticClassesByFile) = errorService.findNonCompilingClassesRegex(dependencyTool)
+                val invalidCode = errorService.findNonCompilingClassesRegex(dependencyTool)
 
-                if (invalidMethodsByFile.isEmpty()) {
+                if (invalidCode.testsByTestClass.isEmpty()) {
                     YateConsole.info("No more invalid methods found to remove")
                 }
 
                 // Remove invalid methods
-                for ((testClassPath, invalidMethods) in invalidMethodsByFile) {
+                for ((testClassPath, invalidMethods) in invalidCode.testsByTestClass) {
                     totalRemovedTests += invalidMethods.size
                     var content: String = YateIO.readFile(testClassPath)
 
@@ -64,12 +65,12 @@ class RemoveFailingTestsMojo: AbstractYateMojo() {
                     YateIO.writeFile(testClassPath, content)
                 }
 
-                if (invalidImportsByFile.isEmpty()) {
+                if (invalidCode.importsByTestClass.isEmpty()) {
                     YateConsole.info("No invalid files found due to import statements")
                 }
 
                 // Remove files with incorrect import statements
-                for((testClassPath, invalidImports) in invalidImportsByFile) {
+                for((testClassPath, invalidImports) in invalidCode.importsByTestClass) {
                     YateConsole.debug("$testClassPath: Contains ${invalidImports.size} invalid import statements")
                     nrIncorrectImports += invalidImports.size
                     nrIncorrectFiles += 1
@@ -77,7 +78,7 @@ class RemoveFailingTestsMojo: AbstractYateMojo() {
                 }
 
                 // Remove invalid static classes
-                for ((testClassPath, invalidStaticClasses) in invalidStaticClassesByFile) {
+                for ((testClassPath, invalidStaticClasses) in invalidCode.staticClassesByTestClass) {
                     var content: String = YateIO.readFile(testClassPath)
                     for (method in invalidStaticClasses) {
                         content = content.replace(method, "")
@@ -87,7 +88,18 @@ class RemoveFailingTestsMojo: AbstractYateMojo() {
                     YateIO.writeFile(testClassPath, content)
                 }
 
-                if (invalidImportsByFile.isEmpty() && invalidMethodsByFile.isEmpty() && invalidStaticClassesByFile.isEmpty()) {
+                // Remove invalid field declarations
+                for ((testClassPath, invalidFieldDeclarations) in invalidCode.invalidFieldDeclarationsByTestClass) {
+                    var content: String = YateIO.readFile(testClassPath)
+                    for (codeLine in invalidFieldDeclarations) {
+                        content = content.replace(codeLine, "")
+                    }
+
+                    YateConsole.debug("Removing #${invalidFieldDeclarations.size} invalid properties in file $testClassPath")
+                    YateIO.writeFile(testClassPath, content)
+                }
+
+                if (invalidCode.importsByTestClass.isEmpty() && invalidCode.testsByTestClass.isEmpty() && invalidCode.staticClassesByTestClass.isEmpty() && invalidCode.invalidFieldDeclarationsByTestClass.isEmpty()) {
                     break
                 }
             }

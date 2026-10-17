@@ -3,6 +3,8 @@ package com.mkonst
 import com.mkonst.config.ConfigYate.getInteger
 import com.mkonst.evaluation.EvaluationDataset
 import com.mkonst.evaluation.YatePlainRunner
+import com.mkonst.evaluation.YateStats
+import com.mkonst.evaluation.ablation.RepairAblationOptions
 import com.mkonst.evaluation.ablation.YateAblationRunner
 import com.mkonst.exceptions.InvalidInputException
 import com.mkonst.helpers.YateConsole
@@ -27,6 +29,15 @@ class GenerateUsingDataset: AbstractYateMojo() {
 
     @Parameter(property = "ablationSetup", required = false, defaultValue = "NO_ABLATION")
     private var ablationSetting: AblationSetup = AblationSetup.NO_ABLATION
+
+    /**
+     * inputGenerationDirectory is a flag we add in case we would like to re-use existing generated tests
+     * The reason was because in the evaluation we would like to find whether the same generation files will have
+     * improvements or not.
+     * Normally this is not a flag that should be used in a generation/repair workflow
+     */
+    @Parameter(property = "inputGenerationDirectory", required = false)
+    private var inputGenerationDirectory: String? = null
 
     override fun execute() {
         if (!csvFile.endsWith(".csv")) {
@@ -53,13 +64,14 @@ class GenerateUsingDataset: AbstractYateMojo() {
             } else if (this.runnerName == TestExecutionRunner.ONLY_GENERATION) {
                 runner = YateOnlyGenerationRunner(dataset.records[0].repositoryPath, dirOutput, model)
             } else if (this.runnerName == TestExecutionRunner.PLAIN_WITH_REPAIR) {
-                runner = PlainWithRepairRunner(dataset.records[0].repositoryPath, includeOracleFixing, dirOutput, model)
+                runner = PlainWithRepairRunner(dataset.records[0].repositoryPath, includeOracleFixing, dirOutput, model, inputDirectory = inputGenerationDirectory)
             } else {
-                runner = YatePlainRunner(dataset.records[0].repositoryPath, dirOutput, model, this.maxFixIterations ?: 5)
+                runner = YatePlainRunner(dataset.records[0].repositoryPath, dirOutput, model, this.maxFixIterations ?: 5, inputDirectory = inputGenerationDirectory)
             }
 
         } else {
-            runner = getRunnerBasedOnAblationSetup()
+            // todo: optimize it so it is generalizable
+            runner = getRunnerBasedOnAblationSetup(dataset.records[0].repositoryPath, dirOutput, model!!)
         }
 
         for (record in dataset.records) {
@@ -91,6 +103,7 @@ class GenerateUsingDataset: AbstractYateMojo() {
                     // Everything went smoothly, update stats
                     record.isExecuted = true
                     record.requests = runner.getNrRequests()
+                    record.totalTokens = runner.getTokensCounter()
 
                     for ((testClassContainer) in responses) {
                         val generatedTests = countTestMethods(testClassContainer)
@@ -112,6 +125,10 @@ class GenerateUsingDataset: AbstractYateMojo() {
 
             info("Updating dataset file")
             dataset.saveAs(csvFile)
+
+            val yateStatsFile: String = csvFile.replace(".csv", "_yate_stats_${record.classPath.removePrefix(record.repositoryPath).replace("/", "_")}" + timestamp() + ".txt")
+            YateStats.save(yateStatsFile)
+            YateStats.reset()
         }
 
         runner.close()
@@ -122,14 +139,44 @@ class GenerateUsingDataset: AbstractYateMojo() {
         dataset.printTotals()
     }
 
-    private fun getRunnerBasedOnAblationSetup(): YateAblationRunner {
-        return when (ablationSetting) {
-            AblationSetup.NO_SUMMARY -> YateAblationRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName, false)
-            AblationSetup.NO_COMPILATION_FIXING -> YateAblationRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName, true, false)
-            AblationSetup.NO_ORACLE_FIXING -> YateAblationRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName, true, true, false)
-            AblationSetup.NO_FIXING -> YateAblationRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName, true, false, false)
-            AblationSetup.NO_COVERAGE_ENHANCEMENT -> YateAblationRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName, true, true, true, false)
-            AblationSetup.NO_ABLATION -> throw Exception("Unexpected error")
+    private fun getRunnerBasedOnAblationSetup(repositoryAbsolutePath: String, dirOutput: String?, model: String): YateAbstractRunner {
+        if (this.runnerName == TestExecutionRunner.DEFAULT) {
+            return when (ablationSetting) {
+                AblationSetup.NO_SUMMARY -> YateAblationRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName, false)
+                AblationSetup.NO_COMPILATION_FIXING -> YateAblationRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName, true, false)
+                AblationSetup.NO_ORACLE_FIXING -> YateAblationRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName, true, true, false)
+                AblationSetup.NO_FIXING -> YateAblationRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName, true, false, false)
+                AblationSetup.NO_COVERAGE_ENHANCEMENT -> YateAblationRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName, true, true, true, false)
+                AblationSetup.NO_ABLATION -> throw Exception("Unexpected error")
+                AblationSetup.NO_IMPORT_FIXING -> throw Exception("Unexpected error")
+            }
         }
+
+        if (this.runnerName == TestExecutionRunner.PLAIN_WITH_REPAIR) {
+            return when (ablationSetting) {
+                AblationSetup.NO_SUMMARY, AblationSetup.NO_COVERAGE_ENHANCEMENT, AblationSetup.NO_ABLATION, AblationSetup.NO_FIXING -> throw Exception("Unexpected error")
+                AblationSetup.NO_COMPILATION_FIXING, AblationSetup.NO_ORACLE_FIXING, AblationSetup.NO_IMPORT_FIXING -> {
+                    val ablationConfiguration = RepairAblationOptions(
+                        fixImportStatements = this.ablationSetting != AblationSetup.NO_IMPORT_FIXING,
+                        fixOtherCompilationErrors = this.ablationSetting != AblationSetup.NO_COMPILATION_FIXING,
+                        fixOracleErrorsWithYate = this.ablationSetting != AblationSetup.NO_ORACLE_FIXING,
+                    )
+
+                    YateConsole.info("Please note the LLM-Plain + Repair runner has been initialized with ablation")
+                    YateConsole.info("Ablation settings:")
+                    YateConsole.info(ablationConfiguration.toString())
+
+                    PlainWithRepairRunner(
+                        repositoryAbsolutePath,
+                        includeOracleFixing,
+                        dirOutput,
+                        model,
+                        ablationOptions = ablationConfiguration,
+                        inputDirectory = inputGenerationDirectory)
+                }
+            }
+        }
+
+        throw Exception("Runner does not support ablation study")
     }
 }
