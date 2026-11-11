@@ -4,6 +4,7 @@ import com.mkonst.config.ConfigYate
 import com.mkonst.evaluation.YatePlainRunner
 import com.mkonst.exceptions.InvalidInputException
 import com.mkonst.helpers.YateConsole
+import com.mkonst.runners.PlainWithRepairRunner
 import com.mkonst.runners.YateAbstractRunner
 import com.mkonst.runners.YateJavaRunner
 import com.mkonst.services.PromptService
@@ -24,6 +25,15 @@ abstract class AbstractYateMojo: AbstractMojo() {
 
     @Parameter(property = "outputDirectory", required = false)
     protected var outputDirectory: String? = null
+
+    /**
+     * inputGenerationDirectory is a flag we add in case we would like to re-use existing generated tests
+     * The reason was because in the evaluation we would like to find whether the same generation files will have
+     * improvements or not.
+     * Normally this is not a flag that should be used in a generation/repair workflow
+     */
+    @Parameter(property = "inputGenerationDirectory", required = false)
+    protected var inputGenerationDirectory: String? = null
 
     @Parameter(property = "modelName", required = false)
     protected var modelName: String? = null
@@ -49,6 +59,9 @@ abstract class AbstractYateMojo: AbstractMojo() {
 
     @Parameter(property = "dirOutput", required = false)
     protected var dirOutput: String? = null
+
+    @Parameter(property = "temperature", required = false)
+    protected var temperature: Double? = null
 
     // Env - LLM related variables
     @Parameter(property = "gptApiKey", required = false)
@@ -128,9 +141,17 @@ abstract class AbstractYateMojo: AbstractMojo() {
 
         if (runnerName === TestExecutionRunner.DEFAULT) {
             return YateJavaRunner(repositoryPath, includeOracleFixing, outputDirectory, modelName)
+        } else if (this.runnerName == TestExecutionRunner.PLAIN_WITH_REPAIR) {
+            return PlainWithRepairRunner(
+                repositoryPath,
+                includeOracleFixing,
+                outputDirectory,
+                modelName,
+                inputDirectory = inputGenerationDirectory
+            )
+        } else {
+            return YatePlainRunner(repositoryPath, outputDirectory, modelName, this.maxFixIterations ?: 5, ProgramLangType.valueOf(ConfigYate.getString("LANG")))
         }
-
-        return YatePlainRunner(repositoryPath, outputDirectory, modelName, 5, ProgramLangType.valueOf(ConfigYate.getString("LANG")))
     }
 
     protected fun setEnvValues() {
@@ -196,6 +217,9 @@ abstract class AbstractYateMojo: AbstractMojo() {
         }
         if (requiredImports != null) {
             ConfigYate.setValue("REQUIRED_IMPORTS", requiredImports!!)
+        }
+        if (temperature !== null) {
+            ConfigYate.setValue("TEMPERATURE", temperature!!.toString())
         }
 
         ConfigYate.setValue("REMOVE_NON_PASSING_TESTS", removeNonPassingTests.toString())

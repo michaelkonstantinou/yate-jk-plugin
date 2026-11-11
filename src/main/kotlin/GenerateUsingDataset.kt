@@ -30,15 +30,6 @@ class GenerateUsingDataset: AbstractYateMojo() {
     @Parameter(property = "ablationSetup", required = false, defaultValue = "NO_ABLATION")
     private var ablationSetting: AblationSetup = AblationSetup.NO_ABLATION
 
-    /**
-     * inputGenerationDirectory is a flag we add in case we would like to re-use existing generated tests
-     * The reason was because in the evaluation we would like to find whether the same generation files will have
-     * improvements or not.
-     * Normally this is not a flag that should be used in a generation/repair workflow
-     */
-    @Parameter(property = "inputGenerationDirectory", required = false)
-    private var inputGenerationDirectory: String? = null
-
     override fun execute() {
         if (!csvFile.endsWith(".csv")) {
             throw InvalidInputException("File (-Dfile) must be of type csv")

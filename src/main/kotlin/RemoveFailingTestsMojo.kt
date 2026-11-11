@@ -1,6 +1,7 @@
 package com.mkonst
 
 import com.mkonst.exceptions.InvalidInputException
+import com.mkonst.helpers.TestFileHelper
 import com.mkonst.helpers.YateCodeUtils
 import com.mkonst.helpers.YateConsole
 import com.mkonst.helpers.YateIO
@@ -8,7 +9,6 @@ import com.mkonst.helpers.YateUtils
 import com.mkonst.services.ErrorService
 import com.mkonst.types.DependencyTool
 import com.mkonst.types.ProgramLangType
-import com.mkonst.types.TestLevel
 import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 import java.io.File
@@ -36,6 +36,9 @@ class RemoveFailingTestsMojo: AbstractYateMojo() {
         // Get all test filepaths associated by their class name
         val classPathsByName: Map<String, String> = getClassPathsByName()
         var totalRemovedTests: Int = 0
+
+        val nrStartingTests = TestFileHelper.getNumberOfTestsInRepository(repositoryPath)
+        YateConsole.info("Current number of tests: #$nrStartingTests")
 
         // Remove tests that do not compile
         if(type == "all" || type == "non-compile") {
@@ -109,7 +112,10 @@ class RemoveFailingTestsMojo: AbstractYateMojo() {
             YateConsole.info("Total removed methods from log (could be also in the import statement files): $totalRemovedTests")
         }
 
-        // Remove tests that do not compile
+        val nrTestsAfterCompilationRemoval = TestFileHelper.getNumberOfTestsInRepository(repositoryPath)
+        YateConsole.info("Current number of tests: #$nrTestsAfterCompilationRemoval")
+
+        // Remove tests that do not pass
         if(type == "all" || type == "non-passing") {
             for (i in 1..maxIterations) {
                 val nonPassingTests = errorService.findNonPassingTests(dependencyTool)
@@ -133,7 +139,11 @@ class RemoveFailingTestsMojo: AbstractYateMojo() {
             }
         }
 
-        YateConsole.info("$totalRemovedTests tests have been removed in total")
+        YateConsole.info("$totalRemovedTests tests have been removed in total (estimation)")
+        val nrTestsAfterPassingRemoval = TestFileHelper.getNumberOfTestsInRepository(repositoryPath)
+        YateConsole.info("Original number of tests: #$nrStartingTests")
+        YateConsole.info("Compiling number of tests: #$nrTestsAfterCompilationRemoval")
+        YateConsole.info("Passing number of tests: #$nrTestsAfterPassingRemoval")
     }
 
     private fun getClassPathsByName(): Map<String, String> {
@@ -141,7 +151,7 @@ class RemoveFailingTestsMojo: AbstractYateMojo() {
 
         return testDirectory.walkTopDown()
             .filter { it.isFile && (it.extension == "java" || it.extension == "kt") }
-            .filter { it.nameWithoutExtension.endsWith("Test") }
+            .filter { it.nameWithoutExtension.endsWith("Test") || it.nameWithoutExtension.startsWith("Test") }
             .associate { it.nameWithoutExtension to it.absolutePath }
     }
 }

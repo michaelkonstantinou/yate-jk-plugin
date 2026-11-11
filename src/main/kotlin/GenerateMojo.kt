@@ -2,9 +2,12 @@ package com.mkonst
 
 import com.mkonst.config.ConfigYate
 import com.mkonst.evaluation.RequestsCounter
+import com.mkonst.evaluation.TokensCounter
+import com.mkonst.evaluation.YateStats
 import com.mkonst.helpers.YateCodeUtils
 import com.mkonst.helpers.YateConsole
 import com.mkonst.helpers.YateJavaUtils.countTestMethods
+import com.mkonst.helpers.YateUtils.timestamp
 import com.mkonst.runners.YateAbstractRunner
 import com.mkonst.runners.YateJavaRunner
 import com.mkonst.types.TestLevel
@@ -28,6 +31,9 @@ class GenerateMojo: AbstractYateMojo() {
 
     @Parameter(property = "methodName", required = false)
     private var methodName: String? = null
+
+    @Parameter(property = "outputStatsFile", required = false)
+    private var outputStatsFile: String? = null
 
     override fun execute() {
         initialize()
@@ -55,6 +61,7 @@ class GenerateMojo: AbstractYateMojo() {
                 }
 
                 val requestsCounter: RequestsCounter = runner.getNrRequests()
+                val tokensCounter: TokensCounter = runner.getTokensCounter()
                 println("# Tests: $generatedTests")
                 println("# All Requests: ${requestsCounter.total}")
                 println("# Generation Requests: ${requestsCounter.generation}")
@@ -62,6 +69,15 @@ class GenerateMojo: AbstractYateMojo() {
                 println("# Oracle fixing Requests: ${requestsCounter.oracleFixing}")
                 println("# Coverage enhancement Requests: ${requestsCounter.coverageEnhancement}")
                 println("Generation time: ${startTime - endTime}")
+                println("Input tokens: ${tokensCounter.input}")
+                println("Output tokens: ${tokensCounter.output}")
+                println("Total tokens: ${tokensCounter.total}")
+
+                if (this.outputStatsFile != null) {
+                    val yateStatsFile: String = "${this.outputStatsFile}_${timestamp()}.txt"
+                    YateConsole.info("Saving stats to file file: $yateStatsFile")
+                    YateStats.save(yateStatsFile)
+                }
             }
 
         } catch (e: Exception) {
